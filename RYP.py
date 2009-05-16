@@ -5,25 +5,32 @@ import cgi
 import csv
 from string import Template
 
-def get_board_seats():
-	bs_conn = httplib.HTTPConnection('spreadsheets.google.com')
-	bs_conn.request("GET", '/pub?key=rWOj5fxWi1wQBwy8pVbajng&output=csv&gid=1')
+def no_blanks(x):
+	if not x.startswith('--,'):
+		return x
+
+def get_spreadsheet_data(url):
+	(host,slash,path) = url.partition('/')
+	conn = httplib.HTTPConnection(host)
+	conn.request("GET", "/" + path)
 	try:
-		bs_resp = bs_conn.getresponse()
+		resp = conn.getresponse()
 	except httplib.HTTPException:
-		print bs_resp.status, bs_resp.reason
+		print resp.status, resp.reason
 		raise
-	board_seats_csv = bs_resp.read()
-	board_seats_csv = board_seats_csv.splitlines()
-	return board_seats_csv
+	data_csv = resp.read()
+	data_csv = data_csv.splitlines()
+	return data_csv
+
+def get_board_seats():
+	return filter(no_blanks, get_spreadsheet_data("spreadsheets.google.com/pub?key=rWOj5fxWi1wQBwy8pVbajng&output=csv&gid=1"))
+
+def get_board_detail():
+	return filter(no_blanks, get_spreadsheet_data("spreadsheets.google.com/pub?key=rWOj5fxWi1wQBwy8pVbajng&output=csv&gid=3"))
 
 def display_board_seats(board_seats_csv):
 	accum = ''
 	for bs in csv.DictReader(board_seats_csv):
-		# I'd like to remove the "--,--,--,--" blank lines at
-		# the source.
-		if bs['Charity'] == "--":
-			continue
 		name = ''
 		email = ''
 		url = ''
@@ -54,5 +61,13 @@ def display_board_seats(board_seats_csv):
 				", contact ", name, email, phone,
 				".</li>\n"
 			       ])
-	return "<h2>Board Seat Opportunities</h2>\n<ul>" \
-	     + accum + "</ul>"
+	return "<ul>\n" + accum + "</ul>"
+
+def display_board_detail(board_details):
+	accum = ''
+	for i in csv.DictReader(board_details):
+		name = "<b>" + i['Organization_Name'] + "</b>"
+		desc = i['Description'].replace(i['Organization_Name'], name, 1)
+
+		accum += "<li>" + desc + "</li>\n"
+	return "<ul>\n" + accum + "</ul>"
