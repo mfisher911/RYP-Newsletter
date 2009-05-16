@@ -18,7 +18,7 @@ def get_board_seats():
 	return board_seats_csv
 
 def display_board_seats(board_seats_csv):
-	print "<h2>Board Seat Opportunities</h2>\n<ul>"
+	accum = ''
 	for bs in csv.DictReader(board_seats_csv):
 		# I'd like to remove the "--,--,--,--" blank lines at
 		# the source.
@@ -41,15 +41,18 @@ def display_board_seats(board_seats_csv):
 			url = Template(" ($url)").substitute(url=bs['URL'])
 
 		if bs['Contact_Phone']:
-			if email:
+			if not name:
+				phone = ''
+			elif email:
 				phone = " or "
 			else:
 				phone = " at "
 			phone += bs['Contact_Phone']
 
-		print ''.join([
+		accum += ''.join([
 				"<li>For ", bs['Charity'], url,
 				", contact ", name, email, phone,
-				".</li>"
+				".</li>\n"
 			       ])
-	print "</ul>"
+	return "<h2>Board Seat Opportunities</h2>\n<ul>" \
+	     + accum + "</ul>"
